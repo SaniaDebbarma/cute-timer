@@ -20,8 +20,8 @@ A clean and minimal web-based cute cooking timer built with HTML, CSS (TailwindC
 ⸻
 
 📸 Screenshot
-[!screenshot](timer1.jpg)
-[!screenshot](timer2.jpg)
+![Preview]( timer1.jpg)
+![Screenshot](timer2.jpg)
 
 📂 How to Run Locally
 	1.	Clone the repository
