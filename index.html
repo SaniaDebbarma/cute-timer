@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cooking Timer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom CSS for the SVG progress bar */
+        .timer-progress-svg {
+            transform: rotate(-90deg);
+        }
+        .progress-circle {
+            transition: stroke-dashoffset 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center font-sans">
+
+    <div class="bg-white p-8 md:p-12 rounded-3xl shadow-2xl max-w-sm w-full mx-4 sm:mx-auto text-center border border-slate-200">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-800 mb-6">Cooking Timer</h1>
+
+        <div class="relative w-64 h-64 mx-auto mb-6">
+            <svg class="absolute inset-0 timer-progress-svg" viewBox="0 0 100 100">
+                <circle class="text-slate-200 stroke-current" stroke-width="6" cx="50" cy="50" r="45" fill="transparent"></circle>
+            </svg>
+           
+            <svg class="absolute inset-0 timer-progress-svg" viewBox="0 0 100 100">
+                <circle id="progress-circle" class="progress-circle stroke-current text-green-500" stroke-width="6" cx="50" cy="50" r="45" fill="transparent" stroke-linecap="round"></circle>
+            </svg>
+            
+           
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+               
+                <div class="w-32 h-32 flex items-center justify-center rounded-full overflow-hidden">
+                    <img src="yes.gif" alt="Animated GIF" class="object-contain">
+                </div>
+                
+                <div class="text-3xl font-bold text-slate-900 mt-2">
+                    <span id="time">00:00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-center items-center space-x-2 mb-6">
+            <input type="number" id="minutes" min="0" value="0" class="w-20 px-3 py-2 text-center rounded-lg border-2 border-slate-300 focus:outline-none focus:border-green-500 transition-colors duration-200">
+            <span class="text-slate-500 text-lg">:</span>
+            <input type="number" id="seconds" min="0" max="59" value="0" class="w-20 px-3 py-2 text-center rounded-lg border-2 border-slate-300 focus:outline-none focus:border-green-500 transition-colors duration-200">
+            <button onclick="setTimer()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors duration-200">Set</button>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-2">
+            <button id="start-btn" onclick="startTimer()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex-1 min-w-[100px]">Start</button>
+            <button id="pause-btn" onclick="pauseTimer()" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex-1 min-w-[100px]">Pause</button>
+            <button id="resume-btn" onclick="resumeTimer()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex-1 min-w-[100px]">Resume</button>
+            <button id="stop-btn" onclick="stopTimer()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex-1 min-w-[100px]">Stop</button>
+        </div>
+    </div>
+
+    <script>
+        let totalTime = 0;
+        let remainingTime = 0;
+        let timerId = null; 
+        let isPaused = false;
+        let pauseTime = 0; 
+
+        const timeDisplay = document.getElementById('time');
+        const progressCircle = document.getElementById('progress-circle');
+
+        const radius = 45;
+        const circumference = 2 * Math.PI * radius;
+        progressCircle.style.strokeDasharray = circumference;
+        progressCircle.style.strokeDashoffset = circumference; 
+
+        function updateDisplay() {
+        
+            if (remainingTime <= 0) {
+                timeDisplay.textContent = "DONE";
+                progressCircle.style.strokeDashoffset = 0; 
+                return;
+            }
+
+            let minutes = Math.floor(remainingTime / 60);
+            let seconds = Math.floor(remainingTime % 60);
+            timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            const elapsedPercent = totalTime > 0 ? (totalTime - remainingTime) / totalTime : 0;
+            const offset = circumference - (elapsedPercent * circumference);
+            
+
+            progressCircle.style.strokeDashoffset = offset;
+        }
+
+        function animateTimer(timestamp) {
+            if (isPaused || totalTime <= 0) {
+                return; 
+            }
+
+            const elapsed = timestamp - pauseTime;
+            remainingTime = totalTime - (elapsed / 1000);
+
+            if (remainingTime <= 0) {
+                remainingTime = 0;
+                updateDisplay();
+                return; // Stop the animation
+            }
+            
+            updateDisplay();
+            timerId = requestAnimationFrame(animateTimer);
+        }
+
+        function setTimer() {
+            
+            cancelAnimationFrame(timerId);
+            isPaused = false;
+
+            const mins = parseInt(document.getElementById('minutes').value) || 0;
+            const secs = parseInt(document.getElementById('seconds').value) || 0;
+            totalTime = mins * 60 + secs;
+            remainingTime = totalTime;
+            updateDisplay();
+        }
+
+        function startTimer() {
+            if (totalTime > 0 && !timerId) {
+                isPaused = false;
+                pauseTime = performance.now(); // Initialize the start time
+                timerId = requestAnimationFrame(animateTimer);
+            }
+        }
+        function pauseTimer() {
+            if (!isPaused) {
+                isPaused = true;
+                cancelAnimationFrame(timerId);
+            }
+        }
+
+        function resumeTimer() {
+            if (isPaused) {
+                isPaused = false;
+                pauseTime = performance.now() - (totalTime - remainingTime) * 1000;
+                timerId = requestAnimationFrame(animateTimer);
+            }
+        }
+
+        function stopTimer() {
+            cancelAnimationFrame(timerId);
+            timerId = null;
+            isPaused = false;
+            remainingTime = totalTime;
+            updateDisplay();
+        }
+    </script>
+</body>
+</html>
